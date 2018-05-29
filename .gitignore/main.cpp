@@ -1,10 +1,26 @@
+/*
+Scieżka bezwzględna w programie, metody
+ścieżka względna zmienić na bezwzględną i operować na niej
+dane są wartościami bezwzględnymi
+*/
+
 #include <iostream>
+#include "main_frame.h"
+#include <typeinfo>
 
 using namespace std;
+
+//typedef void (*fun)(int, int);
 
 int main()
 {
     cout << "Hello world!" << endl;
+
+    Main_frame tmp(2, 1, 10, 10, '*', '*', '*', '*', '*', '*');
+    Main_frame::Frame f_tmp(&tmp, nullptr, 2, 2, 5, 5, '-', '|', '*', '*', '*', '*');
+    //f_tmp.cast();
+    cout << tmp << endl;
+    //cout << tmp.Board[0][0] << endl;
 
     return 0;
 }

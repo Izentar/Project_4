@@ -1,56 +1,120 @@
+/*
+- zamiana ojcow, dzieci
+-
+
+
+
+
+*/
+
 #ifndef MAIN_FRAME_H
 #define MAIN_FRAME_H
 
 #include <iostream>
 #include <deque>
+#include <vector>
 #include <list>
+#include <typeinfo>
+#include <exception>
 
 using namespace std;
 
-class Main_frame
-{
-    int  x, y, width, height;
-    char edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl, filling;
-    deque <deque <char>> Board;
+class Frame;
 
-    bool check_data(const int& ,const int& , const char& , const char& , const char& , const char& , const char& , const char& , const char&, const char&);
+
+class Frame_properties
+{
+protected:
+    int x, y, width, height;
+    char edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl;
+    list <Frame*> children;
+    string name;
+
+    virtual bool check_data(const int&, const int&, const char&, const char&, const char&, const char&, const char&, const char&, const char&);
 
 public:
-    static const char DEFAULT_CHECK_MAIN_FRAME=3;
-    static const char DEFAULT_VOID_MAIN_FRAME=' ';
+    Frame_properties(const int& position_x, const int& position_y, const int& M_f_width, const int& M_f_height, const char& filling_edges_x=DEFAULT_CHECK, \
+                     const char& filling_edges_y=DEFAULT_CHECK, const char& filling_corner_ur=DEFAULT_CHECK, const char& filling_corner_dr=DEFAULT_CHECK, \
+                     const char& filling_corner_ul=DEFAULT_CHECK, const char& filling_corner_dl=DEFAULT_CHECK);
+    virtual ~Frame_properties();
 
-    Main_frame(const int&, const int&, const int&, const int&, const char&, const char&, const char&, const char&, const char&, const char&, const char&);
-    ~Main_frame();
+    virtual int size_x()=0;
+    virtual int size_y()=0;
 
-    void cast();
+    static const char DEFAULT_CHECK=3;
+    static const char DEFAULT_VOID=' ';
+    static const char DEFAULT_AREA=' ';
+    static const char DEFAULT_BORDER='*';
+};
 
-    friend ostream& operator <<(ostream& outgo, const Main_frame& frame);
 
 
+class Main_frame: public Frame_properties
+{
+public:
 
-    friend class Frame;
-
-    class Frame
+    class Frame: public Frame_properties
     {
-        int x, y, width, height;
-        char edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl, filling;
-        Main_frame *anchor;
-        list<Frame*> children;
+    public:
+        class Array
+        {
+            deque<char>::iterator tmp;
+            int y;
+        public:
+            Array(deque<char>::iterator, const int&);
+            virtual ~Array() {};
+            virtual char& operator[] (const int&);
+        };
 
-        bool check_data(const int&,const int&, const char&, const char&, const char&, const char&, const char&, const char&, const char&, const char&);
+    protected:
+        Main_frame *anchor;
+        Frame* father;
+
+        virtual bool check_data(const int&, const int&);
+        virtual bool check_data(const int&, const int&, const int&, const int&);
+        virtual Array operator[] (const int&);
+
+        friend class Array;
 
     public:
-        static const char DEFAULT_CHECK_FRAME=3;
-        static const char DEFAULT_VOID_FRAME=' ';
 
-        Frame(Main_frame&, const int&, const int&, const int&, const int&, const char&, const char&, const char&, const char&, const char&, const char&, const char&);
-        ~Frame();
+        Frame(Main_frame* window, Frame*, const int& pos_x, const int& pos_y, const int& F_width, const int& F_height, const char& filling_edges_x=DEFAULT_CHECK, \
+              const char& filling_edges_y=DEFAULT_CHECK, const char& filling_corner_ur=DEFAULT_CHECK, const char& filling_corner_dr=DEFAULT_CHECK, \
+              const char& filling_corner_ul=DEFAULT_CHECK, const char& filling_corner_dl=DEFAULT_CHECK);
+        virtual ~Frame();
+        Frame(const Frame&);
 
-        void cast();
-        bool move();
-        bool change_size();
+        //virtual bool check_size(const int& f_width, const int& f_height);
+        virtual void cast();
+        virtual bool move(const int&, const int&);
+        virtual bool resize(const int&, const int&);
+        virtual int size_x();
+        virtual int size_y();
 
     };
+    friend class Frame;
+
+private:
+    char filling;
+    deque <deque <char>> Board;
+
+    virtual bool check_data(const int&, const int&, const char&, const char&, const char&, const char&, const char&, const char&, const char&, const char&);
+
+public:
+
+    Main_frame(const int& position_x, const int& position_y, const int& M_f_width, const int& M_f_height, const char& filling_edges_x=DEFAULT_CHECK, const char& filling_edges_y=DEFAULT_CHECK, \
+               const char& filling_corner_ur=DEFAULT_CHECK, const char& filling_corner_dr=DEFAULT_CHECK, const char& filling_corner_ul=DEFAULT_CHECK, \
+               const char& filling_corner_dl=DEFAULT_CHECK, const char& main_filling=DEFAULT_CHECK);
+    virtual ~Main_frame();
+    Main_frame(const Main_frame&);
+
+    virtual void cast();
+    virtual int size_x();
+    virtual int size_y();
+    virtual void move(const int&, const int&);
+    virtual bool resize(const int&, const int&);
+
+    friend ostream& operator <<(ostream& outgo, const Main_frame& frame);
 
 };
 
