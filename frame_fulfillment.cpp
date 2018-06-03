@@ -3,14 +3,30 @@
 
 #include "frame_fulfillment.h"
 
+
+void Frame_fulfillment::save_file(ofstream& saving, string& name_save, bool please_set_here_true)
+{
+    if(please_set_here_true)
+    {
+        string name_frame;
+        name_save=this->Frame_properties::unique_name();
+        saving.write(name_save.c_str(), name_save.size()+1);
+        name_frame=typeid(*this).name();
+        saving.write(name_frame.c_str(), name_frame.size()+1);
+    }
+
+    this->Main_frame::Frame::save_file(saving, name);
+
+    saving.write((char*)&character, sizeof(char));
+}
+
 bool Frame_fulfillment::cast()
 {
-    Main_frame::Frame* tmp=this;
-    for (int i=1; i<tmp->f_height()-1; i++)
+    for (int i=1; i<this->f_height()-1; i++)
     {
-        for (int j=1; j<tmp->f_width()-1; j++)
+        for (int j=1; j<this->f_width()-1; j++)
         {
-            (*tmp)[j][i]=character;
+            (*this)[j][i]=character;
         }
     }
 

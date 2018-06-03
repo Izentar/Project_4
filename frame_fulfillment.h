@@ -21,6 +21,7 @@ public:
     virtual ~Frame_fulfillment();
 
     virtual bool cast();
+    virtual void save_file(ofstream& saving, string& name_save, bool please_set_here_true);
 };
 
 

@@ -3,21 +3,35 @@
 
 #include "frame_inscription.h"
 
+void Frame_inscription::save_file(ofstream& saving, string& name_save, bool please_set_here_true)
+{
+    if(please_set_here_true)
+    {
+        string name_frame;
+        name_save=this->Frame_properties::unique_name();
+        saving.write(name_save.c_str(), name_save.size()+1);
+        name_frame=typeid(*this).name();
+        saving.write(name_frame.c_str(), name_frame.size()+1);
+    }
+
+    this->Main_frame::Frame::save_file(saving, name);
+
+    saving.write(inscription.c_str(), inscription.size()+1);
+}
+
 bool Frame_inscription::cast()
 {
     if(width<3&&height<3)
     {
         return true;
     }
-
-    Main_frame::Frame *tmp=this;
     int counter=0;
 
     for (int k=1; k<this->f_height()-1&&counter<(int)inscription.size(); k++)
     {
         for (int j=1; j<this->f_width()-1&&counter<(int)inscription.size(); j++)
         {
-            (*tmp)[j][k]=inscription[counter++];
+            (*this)[j][k]=inscription[counter++];
         }
     }
 

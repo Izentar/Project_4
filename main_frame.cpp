@@ -6,7 +6,106 @@
 const char Frame_properties::DEFAULT_VOID;
 const char Frame_properties::DEFAULT_AREA;
 const char Frame_properties::DEFAULT_BORDER;
+const char Frame_properties::ILLEGAL_CHAR;
+const char Frame_properties::ILLEGAL_CHAR2;
+const unsigned int Frame_properties::MAX_CHAR;
 bool Main_frame::ostream_flag=false;
+
+void Frame_properties::save_file(ofstream& saving)
+{
+    saving.write((char*)&x, sizeof(int));
+    saving.write((char*)&y, sizeof(int));
+    saving.write((char*)&width, sizeof(int));
+    saving.write((char*)&height, sizeof(int));
+    saving.write((char*)&edges_x, sizeof(char));
+    saving.write((char*)&edges_y, sizeof(char));
+    saving.write((char*)&corner_ur, sizeof(char));
+    saving.write((char*)&corner_dr, sizeof(char));
+    saving.write((char*)&corner_ul, sizeof(char));
+    saving.write((char*)&corner_dl, sizeof(char));
+    saving.write(name.c_str(), name.size()+1);
+    saving.write((char*)&absolute_x, sizeof(int));
+    saving.write((char*)&absolute_y, sizeof(int));
+}
+
+void Main_frame::save_file(ofstream& saving, string& name_save, bool please_set_here_true)
+{
+    string name_frame;
+    unsigned int number;
+
+    if(please_set_here_true)
+    {
+        name_save=this->Frame_properties::unique_name();
+        saving.write(name_save.c_str(), name_save.size()+1);
+        name_frame=typeid(*this).name();
+        saving.write(name_frame.c_str(), name_frame.size()+1);
+    }
+
+    this->Frame_properties::save_file(saving);
+
+    saving.write((char*)&filling, sizeof(char));
+    number=Board.size();
+    saving.write((char*)&number, sizeof(unsigned int));
+    number=Board[0].size();
+    saving.write((char*)&number, sizeof(unsigned int));
+    for (unsigned int i=0; i<Board.size(); i++)
+    {
+        for (unsigned int j=0; j<number; j++)
+        {
+            saving.write((char*)&Board[i][j], sizeof(char));
+        }
+    }
+
+    number=children.size();
+    saving.write((char*)&number, sizeof(unsigned int));
+
+    for (unsigned int i=0; i<number; i++)
+    {
+        name_frame=children[i]->Frame_properties::unique_name();
+        saving.write(name_frame.c_str(), name_frame.size()+1);
+    }
+}
+
+void Main_frame::Frame::save_file(ofstream& saving, string& name_save, bool please_set_here_true)
+{
+    string name_frame;
+    unsigned int number;
+
+    if(please_set_here_true)
+    {
+        name_save=this->Frame_properties::unique_name();
+        saving.write(name_save.c_str(), name_save.size()+1);
+        name_frame=typeid(*this).name();
+        saving.write(name_frame.c_str(), name_frame.size()+1);
+    }
+
+    this->Frame_properties::save_file(saving);
+
+    name_frame=anchor->Frame_properties::unique_name();     // automatic conversion of the pointer
+    saving.write(name_frame.c_str(), name_frame.size()+1);
+
+    if(father!=nullptr)
+    {
+        name_frame=father->Frame_properties::unique_name();
+        saving.write(name_frame.c_str(), name_frame.size()+1);
+    }
+    else
+    {
+        saving.write(name_frame.c_str(), name_frame.size()+1);      // if father is nullptr it`s saving the anchor name
+    }
+
+    number=children.size();
+    saving.write((char*)&number, sizeof(unsigned int));
+    for (unsigned int i=0; i<number; i++)
+    {
+        name_frame=children[i]->Frame_properties::unique_name();
+        saving.write((char*)&name_frame, sizeof(unsigned int));
+    }
+
+    // name_list can be deduced from the pointers
+}
+
+//////////////////////////////
 
 ostream& sizes(ostream& outgo)
 {
@@ -406,12 +505,30 @@ bool Main_frame::Frame::check_data(const int& new_x, const int& new_y, const int
 
 bool Main_frame::Frame::check_names(string& this_name)
 {
-    auto it=find(name_list.begin(), name_list.end(), this_name);
-    if(!name_list.empty()&&it==name_list.end())
+    for (unsigned int i=0; i<this_name.size(); i++)
     {
-        return true;
+        if(this_name[i]==ILLEGAL_CHAR||this_name[i]==ILLEGAL_CHAR2)
+        {
+            return true;
+        }
     }
+    if(father!=nullptr)
+    {
+        auto it=find(father->name_list.begin(), father->name_list.end(), this_name);
+        if((!father->name_list.empty())&&it!=father->name_list.end())
+        {
+            return true;
+        }
 
+    }
+    else
+    {
+        auto it=find(anchor->name_list.begin(), anchor->name_list.end(), this_name);
+        if((!anchor->name_list.empty())&&it!=anchor->name_list.end())
+        {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -463,13 +580,26 @@ filling_corner_ul, filling_corner_dl), filling(main_filling)
     }
 }
 
+Main_frame::~Main_frame()
+{
+    for (unsigned int i=0; i<children.size(); i++)
+    {
+        delete children[i];
+    }
+}
+
 Main_frame::Frame::~Frame()
 {
-    auto it=find(name_list.begin(), name_list.end(), this->name);
-    name_list.erase(it);
+    for (unsigned int i=0; i<children.size(); i++)
+    {
+        delete children[i];
+    }
 
     if(father==nullptr)
     {
+        auto it=find(anchor->name_list.begin(), anchor->name_list.end(), this->name);
+        anchor->name_list.erase(it);
+
         for (unsigned int i=0; i<anchor->children.size(); i++)
         {
             if(anchor->children[i]==this)
@@ -478,9 +608,14 @@ Main_frame::Frame::~Frame()
                 break;
             }
         }
+
+
     }
     else
     {
+        auto it=find(father->name_list.begin(), father->name_list.end(), this->name);
+        father->name_list.erase(it);
+
         for (unsigned int i=0; i<father->children.size(); i++)
         {
             if(father->children[i]==this)
@@ -495,14 +630,7 @@ Main_frame::Frame::~Frame()
     {
         delete children[i];
     }
-}
 
-Main_frame::~Main_frame()
-{
-    for (unsigned int i=0; i<children.size(); i++)
-    {
-        delete children[i];
-    }
 }
 
 // Copy constructor
@@ -528,7 +656,7 @@ filling_corner_dl), anchor(window), father(nullptr)
         absolute_y=y;
 
         (anchor->children).push_back(this);
-        name_list.push_back(name);
+        anchor->name_list.push_back(name);
     }
 }
 
@@ -550,7 +678,7 @@ filling_corner_dl), anchor(window), father(f_father)
         absolute_y=father->absolute_y+y;
 
         (father->children).push_back(this);
-        name_list.push_back(name);
+        father->name_list.push_back(name);
     }
 }
 

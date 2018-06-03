@@ -3,6 +3,7 @@ Scieżka bezwzględna w programie, metody
 ścieżka względna zmienić na bezwzględną i operować na niej
 dane są wartościami bezwzględnymi
 wszystko jest oparte o 4 cwiartke ukladu wspolrzednych
+zakazany znak '~' w nazwie ramki, informacje o ramce
 */
 
 #include <iostream>
@@ -80,7 +81,7 @@ int main()
     }*/
 
     Frame_fulfillment* por= new Frame_fulfillment(tmp, f_tmp, 1, 1, 4, 4, 'A',"name", '-', '|', '*', '*', '*', '*');
-    Main_frame::Frame* aaa=por;
+    //Main_frame::Frame* aaa=por;
 
     /*if(aaa->move(-1,2))
     {
