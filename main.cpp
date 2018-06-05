@@ -4,12 +4,14 @@ Scieżka bezwzględna w programie, metody
 dane są wartościami bezwzględnymi
 wszystko jest oparte o 4 cwiartke ukladu wspolrzednych
 zakazany znak '~' w nazwie ramki, informacje o ramce
+move_to oraz swap do aktualizacji
 */
 
 #include <iostream>
 #include "main_frame.h"
 #include "frame_inscription.h"
 #include "frame_fulfillment.h"
+#include "test_class.h"
 //#include <typeinfo>
 //#include <typeindex>
 
@@ -19,12 +21,17 @@ using namespace std;
 
 int main()
 {
-    cout << "Hello world!" << endl;
+    Menu tmp;
+    tmp.menu_start();
+
+
+    /*cout << "Hello world!" << endl;
 
     Main_frame *tmp=new Main_frame(2, 1, 10, 10, "Glowne", '*', '*', '*', '*', '*', '*', ' ');
-    Main_frame::Frame *f_tmp=new Main_frame::Frame(tmp, nullptr, 2, 2, 7, 7, "tymczasowe", '-', '|', '*', '*', '*', '*');
-    Main_frame::Frame *f_tmp2=new Main_frame::Frame(tmp, f_tmp, 1, 1, 4, 4, "do sprawdzenia", '-', '|', '*', '*', '*', '*');
-    //Main_frame::Frame *f_tmp3=new Main_frame::Frame(tmp, f_tmp, 1, 1, 2, 2, "do sprawdzenia2", '-', '|', '*', '*', '*', '*');
+    Main_frame::Frame *f_tmp=new Main_frame::Frame(tmp, nullptr, 2, 2, 7, 7, "po glownej", '-', '|', '*', '*', '*', '*');
+    Main_frame::Frame *f_tmp2=new Main_frame::Frame(tmp, f_tmp, 1, 1, 4, 4, "zapelniacz", '-', '|', '*', '*', '*', '*');
+    Main_frame::Frame *f_tmp3=new Main_frame::Frame(tmp, f_tmp, 1, 1, 2, 2, "gwiazdki", '-', '|', '*', '*', '*', '*');
+    Main_frame::Frame *f_tmp4=new Main_frame::Frame(tmp, nullptr, 2, 2, 6, 6, "do swap zamiennik", '-', '|', '*', '*', '*', '*');*/
     //f_tmp.cast();
 
     /*const type_info &a=(typeid(f_tmp));
@@ -40,9 +47,10 @@ int main()
     }*/
 
 
-    tmp->all_cast();
+    /*tmp->all_cast();
     tmp->show();
-    cout << "------------------------" << endl;
+    cout << *tmp << endl;
+    cout << "------------------------" << endl;*/
     /*auto T=(*f_tmp2)[0][0];
     cout << typeid(T).name() << endl;
     cout << T << endl;*/
@@ -80,7 +88,8 @@ int main()
         cout << "BAD" << endl;
     }*/
 
-    Frame_fulfillment* por= new Frame_fulfillment(tmp, f_tmp, 1, 1, 4, 4, 'A',"name", '-', '|', '*', '*', '*', '*');
+
+    //Frame_fulfillment* por= new Frame_fulfillment(tmp, f_tmp, 1, 1, 4, 4, 'A',"name", '-', '|', '*', '*', '*', '*');
     //Main_frame::Frame* aaa=por;
 
     /*if(aaa->move(-1,2))
@@ -93,13 +102,33 @@ int main()
         cout << "BAD" << endl;
     }*/
 
+    /*if(swap(f_tmp3, aaa))
+    {
+        cout << "BAD SWAP" << endl;
+    }*/
 
-    tmp->all_cast();
-    tmp->show();
+    /*for (int i=0; i<f_tmp->children.size(); i++)
+    {
+        cout << f_tmp->children[i]->name << endl;
+    }
+    cout << endl;
+    for (int i=0; i<f_tmp4->children.size(); i++)
+    {
+        cout << f_tmp4->children[i]->name << endl;
+    }*/
 
-    cout << *tmp << endl;
+    /*if(f_tmp3->move_to(f_tmp2))
+    {
+        cout << "BAD MOVE" << endl;
+    }*/
 
-    delete tmp;
+
+    //tmp->all_cast();
+    //tmp->show();
+
+    //cout << *tmp << endl;
+
+    //delete tmp;
 
     return 0;
 }

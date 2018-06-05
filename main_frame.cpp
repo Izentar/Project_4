@@ -8,7 +8,6 @@ const char Frame_properties::DEFAULT_AREA;
 const char Frame_properties::DEFAULT_BORDER;
 const char Frame_properties::ILLEGAL_CHAR;
 const char Frame_properties::ILLEGAL_CHAR2;
-const unsigned int Frame_properties::MAX_CHAR;
 bool Main_frame::ostream_flag=false;
 
 void Frame_properties::save_file(ofstream& saving)
@@ -18,11 +17,13 @@ void Frame_properties::save_file(ofstream& saving)
     saving.write((char*)&width, sizeof(int));
     saving.write((char*)&height, sizeof(int));
     saving.write((char*)&edges_x, sizeof(char));
+
     saving.write((char*)&edges_y, sizeof(char));
     saving.write((char*)&corner_ur, sizeof(char));
     saving.write((char*)&corner_dr, sizeof(char));
     saving.write((char*)&corner_ul, sizeof(char));
     saving.write((char*)&corner_dl, sizeof(char));
+
     saving.write(name.c_str(), name.size()+1);
     saving.write((char*)&absolute_x, sizeof(int));
     saving.write((char*)&absolute_y, sizeof(int));
@@ -105,6 +106,56 @@ void Main_frame::Frame::save_file(ofstream& saving, string& name_save, bool plea
     // name_list can be deduced from the pointers
 }
 
+
+bool Main_frame::save_to_file_all()
+{
+    ofstream saving;
+    string name_frame;
+    saving.open("objects.bin", ios_base::trunc|ios_base::binary);
+    if(!saving.good())
+    {
+        return true;
+    }
+    //
+
+    //saving.write((char*)ILLEGAL_CHAR2, sizeof(char));   // begin
+
+
+    //
+    this->save_file(saving, name_frame, true);
+    //name_frame=this->name;
+    //saving.write(name_frame.c_str(), name_frame.size()+1);
+    for (unsigned int i=0; i<children.size(); i++)
+    {
+        this->recursion_save_to_file_objects(children[i], saving);
+    }
+    //
+
+    //saving.write((char*)ILLEGAL_CHAR2, sizeof(char));       // middle
+
+    saving.close();
+    /*saving.open("hierarchy.bin", ios_base::trunc|ios_base::binary);
+    if(!saving.good())
+    {
+        return true;
+    }
+
+    //
+    name_frame=this->name;
+    saving.write(name_frame.c_str(), name_frame.size()+1);
+    for (unsigned int i=0; i<children.size(); i++)
+    {
+        this->recursion_save_to_file_hierarchy(children[i], saving, 1);
+    }
+    //
+
+
+    //saving.write((char*)ILLEGAL_CHAR2, sizeof(char));   // end
+*/
+    return false;
+}
+
+
 //////////////////////////////
 
 ostream& sizes(ostream& outgo)
@@ -165,7 +216,7 @@ ostream& operator <<(ostream& outgo, const Main_frame& frame)
             outgo << " -> x: " << frame.children[i]->x << " y: " << frame.children[i]->y << " width: " << frame.children[i]->width \
                 << " height: " << frame.children[i]->height;
         }
-        recursion_output(outgo, frame.children[i], 2);
+        recursion_output(outgo, frame.children[i], 1);
     }
 
     Main_frame::ostream_flag=false;
@@ -380,12 +431,9 @@ int find_frame_in_father(Main_frame::Frame* f_frame)
 
 int find_frame_in_children(Main_frame::Frame* f_frame)
 {
-    Main_frame::Frame *tmp;
     for (unsigned int i=0; i<f_frame->children.size(); i++)
     {
-        tmp=f_frame->children[i];
-
-        if(tmp->father==f_frame)
+        if((f_frame->children[i])->father==f_frame)
         {
             return i;
         }
@@ -395,12 +443,9 @@ int find_frame_in_children(Main_frame::Frame* f_frame)
 
 int find_frame_in_children(Main_frame* m_frame)
 {
-    Main_frame::Frame *tmp;
     for (unsigned int i=0; i<m_frame->children.size(); i++)
     {
-        tmp=m_frame->children[i];
-
-        if(tmp->anchor==m_frame)
+        if((m_frame->children[i])->anchor==m_frame)
         {
             return i;
         }
@@ -409,25 +454,15 @@ int find_frame_in_children(Main_frame* m_frame)
 }
 
 bool Frame_properties::check_data \
-(const int& f_width, const int& f_height, const char& f_edges_x, const char& f_edges_y, \
+(const int& pos_x, const int& pos_y, const int& f_width, const int& f_height, const char& f_edges_x, const char& f_edges_y, \
 const char& f_corner_ur, const char& f_corner_dr, const char& f_corner_ul, const char& f_corner_dl)
 {
-    if(f_width<=0||f_height<=0)
-    {
-        return true;
-    }
-    if((f_edges_x!=DEFAULT_VOID&&f_edges_x<32)||(f_edges_y!=DEFAULT_VOID&&f_edges_y<32))
-    {
-        return true;
-    }
-    if((f_corner_ur!=DEFAULT_VOID&&f_corner_ur<32)||(f_corner_dr!=DEFAULT_VOID&&f_corner_dr<32))
-    {
-        return true;
-    }
-    if((f_corner_ul!=DEFAULT_VOID&&f_corner_ul<32)||(f_corner_dl!=DEFAULT_VOID&&f_corner_dl<32))
-    {
-        return true;
-    }
+    if(pos_x<0||pos_y<0) return true;
+    if(f_width<=0||f_height<=0) return true;
+    if((f_edges_x!=DEFAULT_VOID&&f_edges_x<32)||(f_edges_y!=DEFAULT_VOID&&f_edges_y<32)) return true;
+    if((f_corner_ur!=DEFAULT_VOID&&f_corner_ur<32)||(f_corner_dr!=DEFAULT_VOID&&f_corner_dr<32)) return true;
+    if((f_corner_ul!=DEFAULT_VOID&&f_corner_ul<32)||(f_corner_dl!=DEFAULT_VOID&&f_corner_dl<32)) return true;
+
     return false;
 }
 
@@ -505,12 +540,22 @@ bool Main_frame::Frame::check_data(const int& new_x, const int& new_y, const int
 
 bool Main_frame::Frame::check_names(string& this_name)
 {
+    if(this_name.size()==0)
+    {
+        return true;
+    }
+    bool OK=true;
     for (unsigned int i=0; i<this_name.size(); i++)
     {
         if(this_name[i]==ILLEGAL_CHAR||this_name[i]==ILLEGAL_CHAR2)
         {
             return true;
         }
+        if(this_name[i]!=' ') OK=false;
+    }
+    if(OK)
+    {
+        return true;
     }
     if(father!=nullptr)
     {
@@ -533,14 +578,14 @@ bool Main_frame::Frame::check_names(string& this_name)
 }
 
 bool Main_frame::check_data \
-(const int& f_width,const int& f_height, const char& f_edges_x, const char& f_edges_y, \
+(const int& pos_x, const int& pos_y, const int& f_width,const int& f_height, const char& f_edges_x, const char& f_edges_y, \
 const char& f_corner_ur, const char& f_corner_dr, const char& f_corner_ul, const char& f_corner_dl, const char& f_filling)
 {
     if(f_filling!=DEFAULT_VOID&&f_filling<32)
     {
         return true;
     }
-    return Frame_properties::check_data(f_width, f_height, f_edges_x, f_edges_y, f_corner_ur, f_corner_dr, f_corner_ul, f_corner_dl)||check_shrink(f_width, f_height);
+    return Frame_properties::check_data(pos_x, pos_y, f_width, f_height, f_edges_x, f_edges_y, f_corner_ur, f_corner_dr, f_corner_ul, f_corner_dl)||check_shrink(f_width, f_height);
 }
 
 //constructor
@@ -561,6 +606,18 @@ const char& main_filling)
 :Frame_properties(position_x, position_y, M_f_width, M_f_height, f_name, filling_edges_x, filling_edges_y, filling_corner_ur, filling_corner_dr, \
 filling_corner_ul, filling_corner_dl), filling(main_filling)
 {
+    if(check_data(x, y, width, height, edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl, filling))
+    {
+        width=0;
+        height=0;
+        x=0;
+        y=0;
+        absolute_x=0;
+        absolute_y=0;
+        throw invalid_argument("Wrong data");
+        //throw this;
+    }
+
     char tmp=DEFAULT_AREA;
 
     if(filling!=DEFAULT_VOID)
@@ -574,30 +631,34 @@ filling_corner_ul, filling_corner_dl), filling(main_filling)
         Board[i].resize(M_f_height, tmp);
     }
 
-    if(check_data(width, height, edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl, filling))
-    {
-        throw this;
-    }
+    absolute_x=0;       // must be because of saving file
+    absolute_y=0;
 }
 
 Main_frame::~Main_frame()
 {
-    for (unsigned int i=0; i<children.size(); i++)
+    while(children.size()!=0)
     {
-        delete children[i];
+        delete children[0];
     }
 }
 
 Main_frame::Frame::~Frame()
 {
-    for (unsigned int i=0; i<children.size(); i++)
+    while(children.size()!=0)
     {
-        delete children[i];
+        delete children[0];
     }
 
     if(father==nullptr)
     {
         auto it=find(anchor->name_list.begin(), anchor->name_list.end(), this->name);
+        #ifdef DEBUG
+        if(it==anchor->name_list.end())
+        {
+            clog << "ERROR: Main_frame::Frame::~Frame(). No name in name_list found" << this->name << endl;
+        }
+        #endif // DEBUG
         anchor->name_list.erase(it);
 
         for (unsigned int i=0; i<anchor->children.size(); i++)
@@ -614,6 +675,12 @@ Main_frame::Frame::~Frame()
     else
     {
         auto it=find(father->name_list.begin(), father->name_list.end(), this->name);
+        #ifdef DEBUG
+        if(it==father->name_list.end())
+        {
+            clog << "ERROR: Main_frame::Frame::~Frame(). No name in name_list found" << this->name << endl;
+        }
+        #endif // DEBUG
         father->name_list.erase(it);
 
         for (unsigned int i=0; i<father->children.size(); i++)
@@ -626,9 +693,9 @@ Main_frame::Frame::~Frame()
         }
     }
 
-    for (unsigned int i=0; i<children.size(); i++)
+    while(children.size()!=0)
     {
-        delete children[i];
+        delete children[0];
     }
 
 }
@@ -646,9 +713,12 @@ Main_frame::Frame::Frame \
 :Frame_properties(pos_x, pos_y, F_width, F_height, f_name, filling_edges_x, filling_edges_y, filling_corner_ur, filling_corner_dr, filling_corner_ul, \
 filling_corner_dl), anchor(window), father(nullptr)
 {
-    if(Frame_properties::check_data(width, height, edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl)||check_data(pos_x, pos_y, F_width, F_height)||check_names(name))
+    if(Frame_properties::check_data(x, y, width, height, edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl)||check_data(pos_x, pos_y, F_width, F_height)||check_names(name))
     {
-        throw this;
+        /*(anchor->children).push_back(this);
+        anchor->name_list.push_back(name);*/
+        throw invalid_argument("Wrong data");
+        //throw this;
     }
     else
     {
@@ -668,9 +738,12 @@ Main_frame::Frame::Frame \
 :Frame_properties(pos_x, pos_y, F_width, F_height, f_name, filling_edges_x, filling_edges_y, filling_corner_ur, filling_corner_dr, filling_corner_ul, \
 filling_corner_dl), anchor(window), father(f_father)
 {
-    if(Frame_properties::check_data(width, height, edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl)||check_data(pos_x, pos_y, F_width, F_height)||check_names(name))
+    if(Frame_properties::check_data(x, y, width, height, edges_x, edges_y, corner_ur, corner_dr, corner_ul, corner_dl)||check_data(pos_x, pos_y, F_width, F_height)||check_names(name))
     {
-        throw this;
+        /*(father->children).push_back(this);
+        father->name_list.push_back(name);*/
+        throw invalid_argument("Wrong data");
+        //throw this;
     }
     else
     {
@@ -781,100 +854,274 @@ int Frame_properties::f_height()
     return height;
 }
 
-bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)   // important method, end in (0,0)
+bool Frame_properties::change_name(string& new_name)
 {
-    int tmp=find_frame_in_father(f_frame), tmp2=find_frame_in_father(s_frame);
-    int tmp3=find_frame_in_children(f_frame), tmp4=find_frame_in_children(s_frame);
-    //int dx, dy;
+    name=new_name;
+    return false;
+}
 
-    if(tmp==-1||tmp2==-1||tmp3==-1||tmp4==-1)
+bool check_swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)
+{
+    if(f_frame->father!=nullptr)
+    {
+        for (unsigned int i=0; i<f_frame->father->name_list.size(); i++)  // if no name conflict in neighborhood
+        {
+            if(find(f_frame->father->name_list.begin(), f_frame->father->name_list.end(), s_frame->name)!=f_frame->father->name_list.end())
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        for (unsigned int i=0; i<f_frame->anchor->name_list.size(); i++)  // if no name conflict in neighborhood
+        {
+            if(find(f_frame->anchor->name_list.begin(), f_frame->anchor->name_list.end(), s_frame->name)!=f_frame->anchor->name_list.end())
+            {
+                return true;
+            }
+        }
+    }
+
+    if(s_frame->father!=nullptr)
+    {
+        for (unsigned int i=0; i<s_frame->father->name_list.size(); i++)  // if no name conflict in neighborhood
+        {
+            if(find(s_frame->father->name_list.begin(), s_frame->father->name_list.end(), f_frame->name)!=s_frame->father->name_list.end())
+            {
+                return true;
+            }
+        }
+    }
+    else
+    {
+        for (unsigned int i=0; i<s_frame->anchor->name_list.size(); i++)  // if no name conflict in neighborhood
+        {
+            if(find(s_frame->anchor->name_list.begin(), s_frame->anchor->name_list.end(), f_frame->name)!=s_frame->anchor->name_list.end())
+            {
+                return true;
+            }
+        }
+    }
+
+    if(f_frame==s_frame)
     {
         return true;
     }
+    if(f_frame->check_expand(s_frame->width, s_frame->height)||s_frame->check_expand(f_frame->width, f_frame->height))
+    {
+        return true;
+    }
+    if(f_frame->check_shrink(s_frame->width, s_frame->height)||s_frame->check_shrink(f_frame->width, f_frame->height))
+    {
+        return true;
+    }
+    return false;
+}
 
-    if(f_frame!=nullptr)
-    {
-        if(f_frame->father->width<s_frame->width||f_frame->father->height<s_frame->height) return true;
-    }
-    else
-    {
-        if(f_frame->anchor->width<s_frame->width||f_frame->anchor->height<s_frame->height) return true;
-    }
-
-    if(s_frame!=nullptr)
-    {
-        if(s_frame->father->width<f_frame->width||s_frame->father->height<f_frame->height) return true;
-    }
-    else
-    {
-        if(s_frame->anchor->width<f_frame->width||s_frame->anchor->height<f_frame->height) return true;
-    }
+void change_fatherChildren_name_list_swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame, const int& father1, const int& father2)
+{
+    list<string>::iterator it;
+    Main_frame::Frame* tmp_frame;
+    Main_frame* tmp_mframe;
+    //string s_tmp, s_tmp2;
 
     if(f_frame->father==nullptr)
     {
-        f_frame->anchor->children[tmp]=s_frame;
+        tmp_mframe=f_frame->anchor;
+        tmp_mframe->children[father1]=s_frame;
+
+        it=find(tmp_mframe->name_list.begin(), tmp_mframe->name_list.end(), f_frame->name);
+        #ifdef DEBUG
+        if(it!=tmp_mframe->name_list.end())
+        {
+            #endif
+            tmp_mframe->name_list.erase(it);
+            #ifdef DEBUG
+        }
+        else
+        {
+            clog << "Error in: bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame, bool all_children_too). Do not find name in name_list of anchor " << s_frame->name << endl;
+        }
+        #endif
     }
     else
     {
-        f_frame->father->children[tmp]=s_frame;
+        tmp_frame=f_frame->father;
+        tmp_frame->children[father1]=s_frame;
+
+        it=find(tmp_frame->name_list.begin(), tmp_frame->name_list.end(), f_frame->name);
+        #ifdef DEBUG
+        if(it!=tmp_frame->name_list.end())
+        {
+            #endif
+            tmp_frame->name_list.erase(it);
+            #ifdef DEBUG
+        }
+        else
+        {
+            clog << "Error in: bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame, bool all_children_too). Do not find name in name_list of father " << s_frame->name << endl;
+        }
+        #endif
+
     }
 
     if(s_frame->father==nullptr)
     {
-        s_frame->anchor->children[tmp2]=f_frame;
+        tmp_mframe=s_frame->anchor;
+        tmp_mframe->children[father2]=f_frame;
+
+        it=find(tmp_mframe->name_list.begin(), tmp_mframe->name_list.end(), s_frame->name);
+        #ifdef DEBUG
+        if(it!=tmp_mframe->name_list.end())
+        {
+            #endif
+            tmp_mframe->name_list.push_back(f_frame->name);
+            tmp_mframe->name_list.erase(it);
+            #ifdef DEBUG
+        }
+        else
+        {
+            clog << "Error in: bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame, bool all_children_too). Do not find name in name_list of anchor " << f_frame->name << endl;
+        }
+        #endif
+
     }
     else
     {
-        s_frame->father->children[tmp2]=f_frame;
+        tmp_frame=s_frame->father;
+        tmp_frame->children[father2]=f_frame;
+
+        it=find(tmp_frame->name_list.begin(), tmp_frame->name_list.end(), s_frame->name);
+        #ifdef DEBUG
+        if(it!=tmp_frame->name_list.end())
+        {
+            #endif
+            tmp_frame->name_list.push_back(f_frame->name);
+            tmp_frame->name_list.erase(it);
+            #ifdef DEBUG
+        }
+        else
+        {
+            clog << "Error in: bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame, bool all_children_too). Do not find name in name_list of anchor " << f_frame->name << endl;
+        }
+        #endif
+
     }
 
-    f_frame->children[tmp3]=s_frame;
-    s_frame->children[tmp4]=f_frame;
-
-
-    // reset to (0,0) in father, both
-
-    /*if(f_frame->absolute_x<=s_frame->absolute_x)
+    if(f_frame->father==nullptr)
     {
-        dx=s_frame->absolute_x-f_frame->absolute_x;
+        f_frame->anchor->name_list.push_back(s_frame->name);
     }
     else
     {
-        dx=f_frame->absolute_x-s_frame->absolute_x;
+        f_frame->father->name_list.push_back(s_frame->name);
     }
-    if(f_frame->absolute_y<=s_frame->absolute_y)
+    /*if(s_frame->father==nullptr)
     {
-        dy=s_frame->absolute_y-f_frame->absolute_y;
+        s_frame->anchor->name_list.push_back(f_frame->name);
     }
     else
     {
-        dy=f_frame->absolute_y-s_frame->absolute_y;
+        s_frame->father->name_list.push_back(f_frame->name);
     }*/
 
+    //change fathers
+    if(f_frame->father==nullptr)
+    {
+        if(s_frame->father!=nullptr)
+        {
+            f_frame->father=s_frame->father;
+            s_frame->father=nullptr;
+        }
+        // else: all father are nullptr
+    }
+    else
+    {
+        if(s_frame->father==nullptr)
+        {
+            s_frame->father=f_frame->father;
+            f_frame->father=nullptr;
+        }
+        else
+        {
+            tmp_frame=s_frame->father;
+            s_frame->father=f_frame->father;
+            f_frame->father=tmp_frame;
+        }
+    }
+}
+
+bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)   // important method, end in (0,0), reset position
+{
+    int tmp=find_frame_in_father(f_frame), tmp2=find_frame_in_father(s_frame);
+    int shift_x1, shift_x2, shift_y1, shift_y2;
+    list<string>::iterator it;
+    string s_tmp;
+
+    #ifdef DEBUG
+    if(tmp==-1||tmp2==-1)
+    {
+        clog << "ERROR: bool swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame, bool all_children_too). No father found" << endl;
+        return true;
+    }
+    #endif
+
+    if(check_swap(f_frame, s_frame))
+    {
+        return true;
+    }
+
+    change_fatherChildren_name_list_swap(f_frame, s_frame, tmp, tmp2);
 
     tmp=f_frame->absolute_x;
     tmp2=f_frame->absolute_y;
 
-    //reset position
-    parent_child_fitting(f_frame, (s_frame->absolute_x)-(f_frame->absolute_x-f_frame->x), (s_frame->absolute_y)-(f_frame->absolute_y-f_frame->y));
-    parent_child_fitting(s_frame, (tmp)-(s_frame->absolute_x-s_frame->x), (tmp2)-(s_frame->absolute_y-s_frame->y));
+    /*shift_x1=(s_frame->x-s_frame->absolute_x)-(f_frame->x);
+    shift_y1=(s_frame->y-s_frame->absolute_y)-(f_frame->y);
+    shift_x2=(f_frame->x-f_frame->absolute_x)-(s_frame->x);
+    shift_y2=(f_frame->y-f_frame->absolute_y)-(s_frame->y);
+*/
+
+    shift_x1=(s_frame->absolute_x-f_frame->absolute_x)-(s_frame->x);
+    shift_y1=(s_frame->absolute_y-f_frame->absolute_y)-(s_frame->y);
+    shift_x2=(f_frame->absolute_x-s_frame->absolute_x)-(f_frame->x);
+    shift_y2=(f_frame->absolute_y-s_frame->absolute_y)-(f_frame->y);
+
+    #ifdef DEBUG
+    cout << "swap, shift_x and shift_y" << endl;
+    cout << f_frame->absolute_x-s_frame->absolute_x-f_frame->x << " " << f_frame->absolute_y-s_frame->absolute_y-f_frame->y << endl;
+    cout << s_frame->absolute_x-tmp-s_frame->x << " " << s_frame->absolute_y-tmp2-s_frame->y << endl;
+    #endif
+    //parent_child_fitting(f_frame, f_frame->absolute_x-s_frame->absolute_x-f_frame->x, f_frame->absolute_y-s_frame->absolute_y-f_frame->y);
+    //parent_child_fitting(s_frame, s_frame->absolute_x-tmp-s_frame->x, s_frame->absolute_y-tmp2-s_frame->y);
+    parent_child_fitting(f_frame, shift_x1, shift_y1);
+    parent_child_fitting(s_frame, shift_x2, shift_y2);
+
     f_frame->x=0;
     f_frame->y=0;
     s_frame->x=0;
     s_frame->y=0;
 
-
     return false;
 }
 
-bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where=-1)        // add at to the pointer children, reset to (0,0)
+bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where)        // add at to the pointer children, reset to (0,0)
 {
-    int itmp=find_frame_in_father(this);
+    if(this==here)
+    {
+        return true;
+    }
 
+    int itmp=find_frame_in_father(this);
+    list<string>::iterator it;
+
+    #ifdef DEBUG
     if(itmp==-1)
     {
         return true;
     }
+    #endif
 
     if(here->width<width||here->height<height)
     {
@@ -884,22 +1131,38 @@ bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where=-1)   
     // move frame
     if(father!=nullptr)
     {
+        it=find(father->name_list.begin(), father->name_list.end(), this->name);
+        #ifdef DEBUG
+        if(it==father->name_list.end())
+        {
+            clog << "ERROR: bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1). Unable to find name in name_list" << this->name << endl;
+        }
+        #endif // DEBUG
+        father->name_list.erase(it);
         father->children.erase((father->children).begin()+itmp);
     }
     else
     {
+        it=find(anchor->name_list.begin(), anchor->name_list.end(), this->name);
+        #ifdef DEBUG
+        if(it==anchor->name_list.end())
+        {
+            clog << "ERROR: bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1). Unable to find name in name_list" << this->name << endl;
+        }
+        #endif // DEBUG
+        anchor->name_list.erase(it);
         anchor->children.erase((anchor->children).begin()+itmp);
     }
 
     father=here;
     itmp=where;
 
-    if(itmp<0||(unsigned int)where>=here->children.size())
+    if(itmp<0||(unsigned int)itmp>=here->children.size())
     {
         itmp=here->children.size()-1;
     }
 
-    if(itmp<0)     // may be size=0
+    if(itmp<0)     // may be ch.size=0
     {
         (here->children).push_back(this);
     }
@@ -907,6 +1170,7 @@ bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where=-1)   
     {
         (here->children).insert(here->children.begin()+itmp, this);
     }
+    here->name_list.push_back(this->name);
 
     // reset position
     parent_child_fitting(this, here->absolute_x-(absolute_x-x), here->absolute_y-(absolute_y-y));
@@ -917,18 +1181,47 @@ bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where=-1)   
 
 }
 
-bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1)
+bool Main_frame::Frame::move_to(Main_frame* here, const int& where)
 {
     int itmp=where, itmp2=find_frame_in_father(this);
+    list<string>::iterator it;
 
+    #ifdef DEBUG
     if(itmp2==-1)
     {
         return true;
     }
+    #endif
 
     if(here->width<width||here->height<height)
     {
         return true;
+    }
+
+    // move frame
+    if(father!=nullptr)
+    {
+        it=find(father->name_list.begin(), father->name_list.end(), this->name);
+        #ifdef DEBUG
+        if(it==father->name_list.end())
+        {
+            clog << "ERROR: bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1). Unable to find name in name_list" << this->name << endl;
+        }
+        #endif // DEBUG
+        father->name_list.erase(it);
+        father->children.erase((father->children).begin()+itmp2);
+    }
+    else
+    {
+        it=find(anchor->name_list.begin(), anchor->name_list.end(), this->name);
+        #ifdef DEBUG
+        if(it==anchor->name_list.end())
+        {
+            clog << "ERROR: bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1). Unable to find name in name_list" << this->name << endl;
+        }
+        #endif // DEBUG
+        anchor->name_list.erase(it);
+        anchor->children.erase((anchor->children).begin()+itmp2);
     }
 
     if(itmp<0||(unsigned int)where>=here->children.size())
@@ -936,22 +1229,14 @@ bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1)
         itmp=here->children.size()-1;
     }
 
-    if(itmp<0)     // may be size=0
+    if(itmp<0)     // may be ch.size=0
     {
         itmp=0;
     }
 
-    // move frame
-    if(father!=nullptr)
-    {
-        father->children.erase((father->children).begin()+itmp2);
-    }
-    else
-    {
-        anchor->children.erase((anchor->children).begin()+itmp2);
-    }
 
     (here->children).insert(here->children.begin()+itmp, this);
+    here->name_list.push_back(this->name);
 
     // reset position
     parent_child_fitting(this, here->absolute_x-(absolute_x-x), here->absolute_y-(absolute_y-y));
@@ -960,5 +1245,107 @@ bool Main_frame::Frame::move_to(Main_frame* here, const int& where=-1)
 
     return false;
 }
+
+bool Main_frame::change_name(string& new_name)
+{
+    name=new_name;
+    return false;
+}
+
+bool Main_frame::Frame::change_name(string& new_name)
+{
+    if(new_name==name)
+    {
+        return true;
+    }
+
+    if(father!=nullptr)
+    {
+        if(find(father->name_list.begin(), father->name_list.end(), new_name)!=father->name_list.end())
+        {
+            return true;
+        }
+    }
+    else
+    {
+        if(find(anchor->name_list.begin(), anchor->name_list.end(), new_name)!=anchor->name_list.end())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+Main_frame::Frame* find_by_string(Main_frame* frame, string& str)
+{
+    if(frame==nullptr)
+    {
+        return nullptr;
+    }
+    for(unsigned int i=0; i<frame->children.size(); i++)
+    {
+        if(frame->children[i]->name==str)
+        {
+            return frame->children[i];
+        }
+    }
+    return nullptr;
+}
+
+Main_frame::Frame* find_by_string(Main_frame::Frame* frame, string& str)
+{
+    if(frame==nullptr)
+    {
+        return nullptr;
+    }
+    for(unsigned int i=0; i<frame->children.size(); i++)
+    {
+        if(frame->children[i]->name==str)
+        {
+            return frame->children[i];
+        }
+    }
+    return nullptr;
+}
+
+Main_frame::Frame* go_back_frame(Main_frame::Frame* frame)
+{
+    if(frame==nullptr)
+    {
+        return nullptr;
+    }
+    return frame->father;
+}
+
+Main_frame* go_back_mFrame(Main_frame::Frame* frame)
+{
+    if(frame==nullptr)
+    {
+        return nullptr;
+    }
+    if(frame->father==nullptr)
+    {
+        return frame->anchor;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+void Main_frame::Frame::where_are_you()
+{
+    cout << this->name << "~";
+    if(this->father!=nullptr)
+    {
+        this->father->where_are_you();
+    }
+    else
+    {
+        cout << this->anchor->name << endl;
+    }
+}
+
 
 #endif // MAIN_FRAME_CPP

@@ -15,6 +15,7 @@ string Frame_properties::unique_name()
     Frame_inscription* tmp_inscription;
     Frame_fulfillment* tmp_fulfillment;
 
+    // do not touch
     tmp+=ILLEGAL_CHAR;
     if((tmp_frame=dynamic_cast<Main_frame::Frame*>(this))!=nullptr)
     {
@@ -25,6 +26,8 @@ string Frame_properties::unique_name()
     {
         tmp=tmp_main_frame->name;
     }
+    // do not touch
+
 
     tmp+=ILLEGAL_CHAR;
     if((tmp_inscription=dynamic_cast<Frame_inscription*>(this))!=nullptr)
@@ -32,7 +35,7 @@ string Frame_properties::unique_name()
         tmp+=tmp_inscription->name;
     }
     else
-    if((tmp_fulfillment=dynamic_cast<Frame_fulfillment*>(this))!=nullptr)
+    if((tmp_fulfillment=dynamic_cast<Frame_fulfillment*>(this))!=nullptr)           // add only here after new else
     {
         tmp+=tmp_fulfillment->name;
     }
@@ -73,82 +76,25 @@ void Main_frame::recursion_save_to_file_objects(Main_frame::Frame* frame, ofstre
 {
 
     //
-    string tmp;
-    frame->save_file(saving, tmp, true);
+    string tmp;// important clear string before cast
 
-    /*Frame_inscription* tmp_inscription;       // unused
+    Frame_inscription* tmp_inscription;
     Frame_fulfillment* tmp_fulfillment;
 
     if((tmp_inscription=dynamic_cast<Frame_inscription*>(frame))!=nullptr)
     {
-        saving.write((char*)tmp_inscription, sizeof(*tmp_inscription));
+        tmp_inscription->save_file(saving, tmp, true);
     }
     else
-    if((tmp_fulfillment=dynamic_cast<Frame_fulfillment*>(frame))!=nullptr)
+    if((tmp_fulfillment=dynamic_cast<Frame_fulfillment*>(frame))!=nullptr)      // add else if new class appear. Set the please_set_here_true on true and tmp must be clear!!
     {
-        saving.write((char*)tmp_fulfillment, sizeof(*tmp_fulfillment));
-    }*/
-    //
+        tmp_fulfillment->save_file(saving, tmp, true);
+    }
 
     for (unsigned int i=0; i<frame->children.size(); i++)
     {
         this->recursion_save_to_file_objects(frame->children[i], saving);
     }
-}
-
-/*void Main_frame::recursion_save_to_file_hierarchy(Main_frame::Frame* frame, ofstream& saving, int number)
-{
-    saving.write((char*)&number, sizeof(int));
-
-
-}*/
-
-bool Main_frame::save_to_file_all()
-{
-    ofstream saving;
-    string name_frame;
-    saving.open("objects.bin", ios_base::trunc|ios_base::binary);
-    if(!saving.good())
-    {
-        return true;
-    }
-    //
-
-    //saving.write((char*)ILLEGAL_CHAR2, sizeof(char));   // begin
-
-
-    //
-    this->save_file(saving, name_frame, true);
-    //name_frame=this->name;
-    //saving.write(name_frame.c_str(), name_frame.size()+1);
-    for (unsigned int i=0; i<children.size(); i++)
-    {
-        this->recursion_save_to_file_objects(children[i], saving);
-    }
-    //
-
-    //saving.write((char*)ILLEGAL_CHAR2, sizeof(char));       // middle
-
-    saving.close();
-    /*saving.open("hierarchy.bin", ios_base::trunc|ios_base::binary);
-    if(!saving.good())
-    {
-        return true;
-    }
-
-    //
-    name_frame=this->name;
-    saving.write(name_frame.c_str(), name_frame.size()+1);
-    for (unsigned int i=0; i<children.size(); i++)
-    {
-        this->recursion_save_to_file_hierarchy(children[i], saving, 1);
-    }
-    //
-
-
-    //saving.write((char*)ILLEGAL_CHAR2, sizeof(char));   // end
-*/
-    return false;
 }
 
 
