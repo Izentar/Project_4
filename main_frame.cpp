@@ -1114,6 +1114,7 @@ bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where)      
     }
 
     int itmp=find_frame_in_father(this);
+    int shift_x, shift_y;
     list<string>::iterator it;
 
     #ifdef DEBUG
@@ -1171,9 +1172,13 @@ bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where)      
         (here->children).insert(here->children.begin()+itmp, this);
     }
     here->name_list.push_back(this->name);
+    this->father=here;
+
+    shift_x=here->absolute_x-absolute_x;
+    shift_y=here->absolute_y-absolute_y;
 
     // reset position
-    parent_child_fitting(this, here->absolute_x-(absolute_x-x), here->absolute_y-(absolute_y-y));
+    parent_child_fitting(this, shift_x, shift_y);
     x=0;
     y=0;
 
@@ -1184,6 +1189,7 @@ bool Main_frame::Frame::move_to(Main_frame::Frame* here, const int& where)      
 bool Main_frame::Frame::move_to(Main_frame* here, const int& where)
 {
     int itmp=where, itmp2=find_frame_in_father(this);
+    int shift_x, shift_y;
     list<string>::iterator it;
 
     #ifdef DEBUG
@@ -1198,7 +1204,7 @@ bool Main_frame::Frame::move_to(Main_frame* here, const int& where)
         return true;
     }
 
-    // move frame
+    // erase info
     if(father!=nullptr)
     {
         it=find(father->name_list.begin(), father->name_list.end(), this->name);
@@ -1237,9 +1243,14 @@ bool Main_frame::Frame::move_to(Main_frame* here, const int& where)
 
     (here->children).insert(here->children.begin()+itmp, this);
     here->name_list.push_back(this->name);
+    this->father=nullptr;
+    this->anchor=here;
+
+    shift_x=-absolute_x;
+    shift_y=-absolute_y;
 
     // reset position
-    parent_child_fitting(this, here->absolute_x-(absolute_x-x), here->absolute_y-(absolute_y-y));
+    parent_child_fitting(this, shift_x, shift_y);
     x=0;
     y=0;
 

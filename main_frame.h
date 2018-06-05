@@ -29,7 +29,8 @@ ostream& sizes(ostream& outgo);
 
 class Frame_properties
 {
-    virtual bool cast()=0;
+    virtual bool move(const int&, const int&)=0;
+    virtual bool resize(const int&, const int&)=0;
 public:
     static const char DEFAULT_VOID=3;
     static const char DEFAULT_AREA=' ';
