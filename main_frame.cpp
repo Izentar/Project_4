@@ -866,7 +866,7 @@ bool check_swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)
     {
         for (unsigned int i=0; i<f_frame->father->name_list.size(); i++)  // if no name conflict in neighborhood
         {
-            if(find(f_frame->father->name_list.begin(), f_frame->father->name_list.end(), s_frame->name)!=f_frame->father->name_list.end())
+            if(find(f_frame->father->name_list.begin(), f_frame->father->name_list.end(), s_frame->name)==f_frame->father->name_list.end())
             {
                 return true;
             }
@@ -876,7 +876,7 @@ bool check_swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)
     {
         for (unsigned int i=0; i<f_frame->anchor->name_list.size(); i++)  // if no name conflict in neighborhood
         {
-            if(find(f_frame->anchor->name_list.begin(), f_frame->anchor->name_list.end(), s_frame->name)!=f_frame->anchor->name_list.end())
+            if(find(f_frame->anchor->name_list.begin(), f_frame->anchor->name_list.end(), s_frame->name)==f_frame->anchor->name_list.end())
             {
                 return true;
             }
@@ -887,7 +887,7 @@ bool check_swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)
     {
         for (unsigned int i=0; i<s_frame->father->name_list.size(); i++)  // if no name conflict in neighborhood
         {
-            if(find(s_frame->father->name_list.begin(), s_frame->father->name_list.end(), f_frame->name)!=s_frame->father->name_list.end())
+            if(find(s_frame->father->name_list.begin(), s_frame->father->name_list.end(), f_frame->name)==s_frame->father->name_list.end())
             {
                 return true;
             }
@@ -897,8 +897,9 @@ bool check_swap(Main_frame::Frame* f_frame, Main_frame::Frame* s_frame)
     {
         for (unsigned int i=0; i<s_frame->anchor->name_list.size(); i++)  // if no name conflict in neighborhood
         {
-            if(find(s_frame->anchor->name_list.begin(), s_frame->anchor->name_list.end(), f_frame->name)!=s_frame->anchor->name_list.end())
+            if(find(s_frame->anchor->name_list.begin(), s_frame->anchor->name_list.end(), f_frame->name)==s_frame->anchor->name_list.end())
             {
+
                 return true;
             }
         }
@@ -1259,6 +1260,14 @@ bool Main_frame::Frame::move_to(Main_frame* here, const int& where)
 
 bool Main_frame::change_name(string& new_name)
 {
+    for (unsigned int i=0; i<new_name.size(); i++)
+    {
+				if(new_name[i]==ILLEGAL_CHAR||new_name[i]==ILLEGAL_CHAR2)
+				{
+						return true;
+				}
+    }
+
     name=new_name;
     return false;
 }
@@ -1270,12 +1279,34 @@ bool Main_frame::Frame::change_name(string& new_name)
         return true;
     }
 
+		for (unsigned int i=0; i<new_name.size(); i++)
+		{
+				if(new_name[i]==ILLEGAL_CHAR||new_name[i]==ILLEGAL_CHAR2)
+				{
+						return true;
+				}
+		}
+
+		list<string>::iterator it;
+
     if(father!=nullptr)
     {
         if(find(father->name_list.begin(), father->name_list.end(), new_name)!=father->name_list.end())
         {
             return true;
         }
+
+        if((it=find(father->name_list.begin(), father->name_list.end(), this->name))!=father->name_list.end())
+        {
+						father->name_list.erase(it);
+						father->name_list.push_back(new_name);
+        }
+        #ifdef DEBUG
+        else
+        {
+            clog << "ERROR: bool Main_frame::Frame::change_name(string& new_name). Cannot find name in father->namelist" << endl;
+        }
+        #endif
     }
     else
     {
@@ -1283,7 +1314,21 @@ bool Main_frame::Frame::change_name(string& new_name)
         {
             return true;
         }
+
+        if((it=find(anchor->name_list.begin(), anchor->name_list.end(), this->name))!=anchor->name_list.end())
+        {
+						anchor->name_list.erase(it);
+						anchor->name_list.push_back(new_name);
+        }
+        #ifdef DEBUG
+        else
+        {
+            clog << "ERROR: bool Main_frame::Frame::change_name(string& new_name). Cannot find name in father->namelist" << endl;
+        }
+        #endif
     }
+
+    this->name=new_name;
 
     return false;
 }
